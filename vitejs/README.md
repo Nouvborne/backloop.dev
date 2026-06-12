@@ -12,7 +12,7 @@ Any subdomain of `*.backloop.dev` points to `localhost`!
 
 1. `npm install vite-plugin-backloop.dev --save-dev`
 2. Edit `vite.config.js`
-   - Add `import backloop from 'vite-plugin-backloop'`
+   - Add `import backloop from 'vite-plugin-backloop.dev'`
    - Add `backloop('myHostName')` to the plugins list
 
 Example

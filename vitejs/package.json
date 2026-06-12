@@ -10,6 +10,10 @@
     "local development",
     "SSL"
   ],
+  "homepage": "https://github.com/perki/backloop.dev/tree/main/vitejs",
+  "bugs": {
+    "url": "https://github.com/perki/backloop.dev/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:perki/backloop.dev.git"
@@ -19,6 +23,11 @@
   "type": "module",
   "types": "index.d.ts",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "AGENTS.md"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

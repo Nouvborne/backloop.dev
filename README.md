@@ -19,6 +19,12 @@ All `*.backloop.dev` hostnames point to `127.0.0.1` and `::1`.
 
 Most of the documentation is present on the [NodeJS](./nodejs) package 👈🏻
 
+## For AI agents
+
+- [AGENTS.md](./AGENTS.md) — repository map, dev commands and conventions for coding agents.
+- [https://backloop.dev/llms.txt](https://backloop.dev/llms.txt) — LLM-readable summary of the project, with [llms-full.txt](https://backloop.dev/llms-full.txt) for the complete usage documentation in plain markdown.
+- [https://backloop.dev/pack.json](https://backloop.dev/pack.json) — machine-readable certificate bundle (cert, CA, split key, validity dates).
+
 ## CONTRIBUTING
 
 - Pull requests are welcome.
