@@ -4,7 +4,7 @@ Quick reference for AI agents using this package.
 
 ## What it does
 
-One-line HTTPS for the Vite dev server, with a real (Let's Encrypt-signed) certificate. Any subdomain of `*.backloop.dev` resolves to `127.0.0.1` / `::1`, so the browser sees a valid HTTPS origin while everything stays on your machine.
+One-line HTTPS for the Vite dev server, with a real (publicly trusted) certificate. Any subdomain of `*.backloop.dev` resolves to `127.0.0.1` / `::1`, so the browser sees a valid HTTPS origin while everything stays on your machine.
 
 ## Usage
 

@@ -7,7 +7,7 @@ Guidance for AI coding agents working on this repository.
 `backloop.dev` provides HTTPS on localhost for local development:
 
 - DNS: **any** subdomain of `*.backloop.dev` resolves to `127.0.0.1` and `::1`.
-- A publicly shared wildcard SSL certificate for `*.backloop.dev` (Let's Encrypt), renewed weekly and published on https://backloop.dev.
+- A publicly shared, publicly trusted wildcard SSL certificate for `*.backloop.dev`, renewed regularly and published on https://backloop.dev.
 - Certificates are **not bundled** in the npm package: they are downloaded from `https://backloop.dev/pack.json` at install time (postinstall) and refreshed at runtime when close to expiry.
 
 The apex domain `backloop.dev` is the only exception: it points to the certificate download page (GitHub Pages).
