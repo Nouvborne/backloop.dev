@@ -4,12 +4,14 @@
  */
 const { write } = require('./files');
 
-function save (domain, certificate, certificateKey) {
-  const key = certificateKey.toString();
-  const keyPart1 = key.substring(0, 600);
-  const keyPart2 = key.substring(600);
-  write(['./gh-pages', domain + '-key.part1.pem'], keyPart1);
-  write(['./gh-pages', domain + '-key.part2.pem'], keyPart2);
+/**
+ * Save a certificate to the gh-pages checkout.
+ *
+ * Only the PUBLIC certificate material is written. The private key is never
+ * persisted into gh-pages: publishing a private key violates the Let's Encrypt
+ * Subscriber Agreement and would get the certificate revoked.
+ */
+function save (domain, certificate) {
   write(['./gh-pages', domain + '-bundle.crt'], certificate);
   // strip bundle in ca + cert
   const FirstEnd = certificate.indexOf('-----END CERTIFICATE-----');

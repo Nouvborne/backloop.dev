@@ -10,7 +10,7 @@ Any subdomain of `*.backloop.dev` points to `localhost`!
 
 --------------------------------------------------
 
-**Exception:** `backloop.dev`, which points to a page where you can download the certificates.
+**Exception:** `backloop.dev`, which points to the website, and `api.backloop.dev`, which powers certificate issuance.
 
 
 ## Why?
@@ -23,11 +23,33 @@ Which anyway will fall back on the must-have "non-mixed-content" (no HTTP & HTTP
 
 But making requests to **HTTPS APIs** from **HTTP** sites on **localhost** would not be possible without changing security options on your browser, which is why **backloop.dev** provides SSL certificates with a full loopback domain, to let anyone benefit from a signed certificate on **localhost**.
 
-## Where are the certificates?
+## How it works
 
-Certificates are not bundled with the npm package, but downloaded and updated from [backloop.dev](https://backloop.dev) at installation and runtime, or manually with `backloop.dev-update`. To specify in which directory the certificates should be stored, set the environment variable `BACKLOOP_DEV_CERTS_DIR`.
+- `*.backloop.dev` resolves to `127.0.0.1` / `::1` (public DNS).
+- On first use, this package **generates a private key on your machine** — it never leaves it.
+- It sends only a certificate signing request (CSR) for your subdomain to the `backloop.dev` issuance API (`https://api.backloop.dev/cert`), which completes the ACME DNS-01 challenge with Let's Encrypt (it controls the DNS) and returns a **publicly trusted certificate** for your subdomain.
+- The certificate is stored locally, refreshed automatically when close to expiry, and served by your local HTTPS server.
 
-If the certificates are outdated, they are checked and updated at boot.
+No private key is ever published, which keeps the service compliant with the [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/repository/) (disclosing private keys is prohibited and leads to revocation).
+
+## Certificate files
+
+Certificates are not bundled with the npm package. They are requested from the [backloop.dev](https://backloop.dev) issuance API at installation and runtime, or manually with `backloop.dev-update`. They are stored in the package `certs/` directory by default; to specify a custom location, set the environment variable `BACKLOOP_DEV_CERTS_DIR`.
+
+The local `certs/` directory contains:
+- `backloop.dev-key.pem` — **your private key** (never uploaded, never published)
+- `backloop.dev-cert.crt` / `backloop.dev-ca.crt` / `backloop.dev-bundle.crt` — the public certificate material
+- `pack.json` — metadata (hostnames, expiry), no secrets
+
+If the certificate is outdated or missing, it is issued/refreshed at boot.
+
+### Subdomain selection
+
+The certificate is valid for the subdomain(s) of `*.backloop.dev` you use. By default this is your machine hostname (sanitized). Override it with the `BACKLOOP_DEV_SUBDOMAIN` environment variable (comma-separated for multiple):
+
+```bash
+export BACKLOOP_DEV_SUBDOMAIN=myapp
+```
 
 ## Usage
 
@@ -44,7 +66,7 @@ Add `-g` to use `backloop.dev` and `backloop.dev-proxy` globally.
 
 #### Static file server
 
-Serve the contents of a directory on `https://whatever.backloop.dev:<port>/`:
+Serve the contents of a directory on `https://<subdomain>.backloop.dev:<port>/`:
 
 ```
 backloop.dev <path> [<port>]
@@ -52,14 +74,14 @@ backloop.dev <path> [<port>]
 
 Example:
 ```bash
-backloop.dev ./dist 4443
+BACKLOOP_DEV_SUBDOMAIN=myapp backloop.dev ./dist 4443
 # Server started on port 4443 serving files in './dist'
 # Open https://myapp.backloop.dev:4443/
 ```
 
 #### Reverse proxy
 
-Proxy requests from `https://whatever.backloop.dev:<port>/` to a backend.
+Proxy requests from `https://<subdomain>.backloop.dev:<port>/` to a backend.
 Supports `http://` and `https://` targets, with optional base path.
 Note: adds `x-forwarded-proto: https` to headers for express-session and similar services.
 
@@ -106,6 +128,8 @@ This starts a single server on port 7654 where:
 - `https://api.backloop.dev:7654/` proxies to `http://localhost:3000/v1`
 - `https://admin.backloop.dev:7654/` proxies to `https://anotherwebsite.com:8443`
 
+The configured hostnames are covered by the requested certificate, so a single certificate is issued for all of them.
+
 Paths are resolved relative to the config file location.
 
 **Path-based routing** is also supported. Use `hostname/path/` keys (trailing slash required) to route different URL prefixes to different handlers on the same hostname:
@@ -124,15 +148,11 @@ Here `https://tom.backloop.dev:7654/static/app.js` serves `./public/app.js`, whi
 
 #### Certificate update
 
-Manually force update of the certificates:
+Manually force a refresh of the certificate:
 
 ```
 backloop.dev-update
 ```
-
-### Certificate files
-
-You can download the certificate files on [backloop.dev](https://backloop.dev) for your own usage.
 
 ### From a node app
 
@@ -147,6 +167,7 @@ https.createServer(httpsOptions, (req, res) => {
   res.end('hello world\n');
 }).listen(8443);
 
+// https://<httpsOptions.hostname>.backloop.dev:8443/
 ```
 
 #### CommonJS
@@ -179,6 +200,8 @@ const httpsOptionsPromise = require('backloop.dev').httpsOptionsPromise;
 
 })();
 ```
+
+The returned object also carries `hostname` (and `hostnames`): the subdomain(s) of `*.backloop.dev` the certificate is valid for. Use `httpsOptions.hostname` to build your URL.
 
 The following is not recommended as it will crash your app if the certificates are expired. It will however refresh them for your next boot ;).
 
@@ -213,7 +236,7 @@ httpsOptionsAsync(function (err, httpsOptions) {
 // consider  `await require('backloop.dev').httpsOptionsPromise()`
 const backloopHttpsOptions = require('backloop.dev').httpsOptions();
 backloopHttpsOptions.https = true;
-backloopHttpsOptions.host = 'whatever.backloop.dev';
+backloopHttpsOptions.host = backloopHttpsOptions.hostname + '.backloop.dev';
 
 module.exports = {
   // ...your options...
@@ -221,7 +244,7 @@ module.exports = {
 };
 ```
 
-Now `vue-cli-service serve` will be served on `https://whatever.backloop.dev`
+Now `vue-cli-service serve` will be served on `https://<your hostname>.backloop.dev`
 
 #### ViteJs
 
@@ -234,20 +257,22 @@ import backloopHttpsOptions from 'backloop.dev';
 export default defineConfig({
   server: {
     port: 4443,
-    host: 'whatever.backloop.dev',
+    host: backloopHttpsOptions.hostname + '.backloop.dev',
     https: backloopHttpsOptions
   },
   // ... //
 });
 ```
 
-Now `npm run dev` will be served on `https://whatever.backloop.dev`
+Now `npm run dev` will be served on `https://<your hostname>.backloop.dev`
 There is also a ViteJS plugin that does the same: [vite-plugin-backloop.dev](https://www.npmjs.com/package/vite-plugin-backloop.dev).
 
 ## Security
 
+Your private key never leaves your machine, and no private key is published by the service. However, anyone can ask the issuance API for a certificate for any subdomain of `*.backloop.dev` (that is the point of a zero-registration service).
+
 What if `*.backloop.dev` DNS A and AAAA entries are not pointing to `127.0.0.1` and `::1` but to another IP (malicious ones)?
-Then your HTTPS requests will not end up on your machine, but on these malicious servers.
+Then your HTTPS requests will not end up on your machine, but on these malicious servers — and a certificate exists for your subdomain.
 
 Even if this is very unlikely to happen, you may want to be on the safe side by adding `<what you need>.backloop.dev` in your `/etc/hosts` file.
 
@@ -262,7 +287,7 @@ Even if this is very unlikely to happen, you may want to be on the safe side by 
 npm test
 ```
 
-Uses Node.js built-in test runner (requires Node.js 18+).
+Uses Node.js built-in test runner (requires Node.js 18+). Tests generate a local self-signed certificate and run fully offline.
 
 ## Contributing
 
@@ -270,8 +295,8 @@ Uses Node.js built-in test runner (requires Node.js 18+).
 
 Pull requests are welcome.
 
-The code to generate, publish and renew the certificates is [here on github](https://github.com/perki/backloop.dev/tree/main/renew)
+The code to issue certificates (the API) and publish the website is [here on github](https://github.com/Nouvborne/backloop.dev/tree/main/renew)
 
 ## License
 
-[BSD-3-Clause](https://github.com/perki/backloop.dev/blob/main/LICENSE)
+[BSD-3-Clause](https://github.com/Nouvborne/backloop.dev/blob/main/LICENSE)

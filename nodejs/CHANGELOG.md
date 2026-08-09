@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.0.0
+
+### Breaking changes
+- **No more shared certificate.** Private keys are no longer published or downloaded from `pack.json`. Publishing a private key violates the Let's Encrypt Subscriber Agreement (and caused revocation), so the shared wildcard certificate is gone.
+- Certificates are now **issued per developer**: the package generates a private key locally, sends only a CSR to the backloop.dev issuance API (`https://api.backloop.dev/cert`), which completes the ACME DNS-01 challenge and returns a publicly trusted certificate for your subdomain(s). The private key never leaves your machine.
+- `pack.json` no longer contains `key1`/`key2`/`cert`/`ca` — only metadata (`hostnames`, `info.notAfter`). Old `pack.json` files are ignored.
+- `httpsOptions*()` now also return `hostname` (and `hostnames`): the subdomain(s) the certificate is valid for. Use it to build your URL (e.g. `https://${options.hostname}.backloop.dev`).
+- `httpsOptions*()` accept an optional `{ hostnames: [...] }` argument (used by multi-host config) and `{ force: true }`.
+- Subdomain selection: `BACKLOOP_DEV_SUBDOMAIN` env var (comma-separated) > hostnames persisted locally > sanitized machine hostname.
+- New dependency: `node-forge` (local key + CSR generation).
+
+### Changes
+- `bin/update.js` (postinstall) is now best-effort: it warns instead of failing `npm install` when the API is unreachable/offline.
+- Multi-host mode requests a certificate covering all configured hostnames.
+- Tests are fully offline (seeded self-signed certificate via `test/helpers.js`).
+
 ## 3.0.3
 - Added `AGENTS.md` (guidance for AI coding agents), shipped with the package
 - Added `files` field to package.json: tarball no longer includes `test/`, `eslint.config.js` and the example `config.json`

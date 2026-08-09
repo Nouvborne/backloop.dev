@@ -8,15 +8,13 @@ const acme = require('acme-client');
 async function pack (domain) {
   const res = {
     version: {
-      num: '1',
-      message: '' // message to display if version does not match
+      num: 2,
+      message: 'backloop.dev >= 4.0.0 is required; certificates are now issued per developer'
     },
     domain: domain,
+    apiUrl: `https://api.${domain}/cert`,
     cert: read(['./gh-pages', domain + '-cert.crt']),
-    ca: read(['./gh-pages', domain + '-ca.crt']),
-    key2: read(['./gh-pages', domain + '-key.part2.pem']),
-    key1: read(['./gh-pages', domain + '-key.part1.pem']),
-    key11: 'XXXXXX DUMMY STRING XXXXXXX'
+    ca: read(['./gh-pages', domain + '-ca.crt'])
   };
   res.info = await acme.forge.readCertificateInfo(res.cert);
   write(['./gh-pages', 'pack.json'], JSON.stringify(res, null, 2));

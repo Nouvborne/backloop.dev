@@ -1,7 +1,7 @@
 {
   "name": "backloop.dev",
-  "version": "3.0.3",
-  "description": "Local HTTPS development with *.backloop.dev pointing to localhost and SSL certificates",
+  "version": "4.0.0",
+  "description": "Local HTTPS development with *.backloop.dev pointing to localhost and per-developer SSL certificates",
   "keywords": [
     "SSL",
     "HTTPS",
@@ -18,13 +18,13 @@
     "same-origin policy",
     "certificates"
   ],
-  "homepage": "https://github.com/perki/backloop.dev",
+  "homepage": "https://github.com/Nouvborne/backloop.dev",
   "bugs": {
-    "url": "https://github.com/perki/backloop.dev/issues"
+    "url": "https://github.com/Nouvborne/backloop.dev/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:perki/backloop.dev.git"
+    "url": "git@github.com:Nouvborne/backloop.dev.git"
   },
   "license": "BSD-3-Clause",
   "author": "Perki (https://backloop.dev)",
@@ -56,6 +56,9 @@
     "lint": "eslint .",
     "proxy": "node src/webserver/proxy.js",
     "start": "node src/webserver/main.js"
+  },
+  "dependencies": {
+    "node-forge": "^1.3.1"
   },
   "devDependencies": {
     "neostandard": "^0.12.2"

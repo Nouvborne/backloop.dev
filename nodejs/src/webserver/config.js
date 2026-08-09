@@ -113,7 +113,7 @@ async function startFromConfig (configPath) {
   }
 
   // Start the server
-  const options = await httpsOptionsPromise();
+  const options = await httpsOptionsPromise({ hostnames: knownHostnames });
   const server = https.createServer(options, function (req, res) {
     // Extract hostname from Host header: "tom.backloop.dev:6667" -> "tom"
     const hostHeader = req.headers.host || '';

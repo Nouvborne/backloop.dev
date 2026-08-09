@@ -13,7 +13,7 @@ Any subdomain of `*.backloop.dev` points to `localhost`!
 1. `npm install vite-plugin-backloop.dev --save-dev`
 2. Edit `vite.config.js`
    - Add `import backloop from 'vite-plugin-backloop.dev'`
-   - Add `backloop('myHostName')` to the plugins list
+   - Add `backloop('myHostName')` to the plugins list. The hostname is optional: when omitted, the default subdomain issued to this machine is used.
 
 Example
 
@@ -31,6 +31,8 @@ export default defineConfig({
 });
 ```
 
+The plugin requests a certificate for the given subdomain (or the machine default) from the backloop.dev issuance API, then serves Vite over `https://myComputer.backloop.dev:<port>/`. The private key is generated on your machine and never leaves it.
+
 #### Run
 
 Launch viteJs in dev model `npm run dev`
@@ -43,4 +45,4 @@ Open `https://myComputer.backloop.dev:<port>`
 
 ## License
 
-[BSD-3-Clause](https://github.com/perki/backloop.dev/blob/main/LICENSE)
+[BSD-3-Clause](https://github.com/Nouvborne/backloop.dev/blob/main/LICENSE)

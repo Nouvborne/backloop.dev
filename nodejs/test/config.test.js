@@ -1,3 +1,5 @@
+process.env.BACKLOOP_DEV_CERTS_DIR = require('./helpers').setupCertsDir(['test']);
+
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const https = require('https');

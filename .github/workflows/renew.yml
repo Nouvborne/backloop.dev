@@ -41,6 +41,14 @@ jobs:
       # uses env: GANDI_API_TOKEN, ACME_ACCOUNT_URL, ACME_ACCOUNT_KEY
       run: IS_PRODUCTION=true npm start
 
+    - name: Remove published private keys from the website
+      # Private keys must never be published (Let's Encrypt Subscriber Agreement).
+      # New packs no longer include them; this purges the historical key files.
+      working-directory: ./renew/gh-pages
+      run: |
+        git rm -q --ignore-unmatch --cached '*-key.part*.pem' || true
+        rm -f *-key.part*.pem
+
     - name: Commit and push
       uses: EndBug/add-and-commit@v9
       with:

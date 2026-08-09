@@ -135,7 +135,7 @@ function runCLI () {
     });
     server.listen(port, function () {
       console.log(`Server started on port ${port} serving files in '${dirPath}'\n` +
-        `You can open https://whatever.backloop.dev:${port}/`);
+        `You can open https://${options.hostname}.backloop.dev:${port}/`);
     });
   })();
 }

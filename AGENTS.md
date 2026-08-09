@@ -7,20 +7,21 @@ Guidance for AI coding agents working on this repository.
 `backloop.dev` provides HTTPS on localhost for local development:
 
 - DNS: **any** subdomain of `*.backloop.dev` resolves to `127.0.0.1` and `::1`.
-- A publicly shared, publicly trusted wildcard SSL certificate for `*.backloop.dev`, renewed regularly and published on https://backloop.dev.
-- Certificates are **not bundled** in the npm package: they are downloaded from `https://backloop.dev/pack.json` at install time (postinstall) and refreshed at runtime when close to expiry.
+- Certificates are **issued per developer**: the npm package generates a private key locally and sends only a CSR to the issuance API (`https://api.backloop.dev/cert`), which completes the ACME DNS-01 challenge with Let's Encrypt and returns a publicly trusted certificate for the requested subdomain(s).
+- **No private key is ever uploaded or published.** This is a hard requirement — publishing private keys violates the Let's Encrypt Subscriber Agreement and causes revocation.
+- Certificates are **not bundled** in the npm package: they are issued at install time (postinstall, best-effort) and refreshed at runtime when close to expiry.
 
-The apex domain `backloop.dev` is the only exception: it points to the certificate download page (GitHub Pages).
+The apex `backloop.dev` points to the website (GitHub Pages); `api.backloop.dev` is an explicit DNS record that powers certificate issuance.
 
 ## Repository map
 
 | Path | What it is |
 |---|---|
-| `nodejs/` | The `backloop.dev` npm package: Node API (`httpsOptions*`), CLI static server, reverse proxy, multi-host config server, cert updater. Most of the code and docs live here. |
+| `nodejs/` | The `backloop.dev` npm package: Node API (`httpsOptions*`), CLI static server, reverse proxy, multi-host config server, local key + CSR generation and API round-trip. Most of the code and docs live here. |
 | `vitejs/` | The `vite-plugin-backloop.dev` npm package: thin Vite plugin wrapping `nodejs/`. |
-| `renew/` | Certificate renewal infrastructure (Let's Encrypt + Gandi DNS). Runs via GitHub workflow; needs secrets (`ACME_ACCOUNT_*`, `GANDI_API_TOKEN`). **Do not modify unless explicitly asked.** |
+| `renew/` | Certificate infrastructure: per-developer issuance API (`src/server.js`, Let's Encrypt ACME DNS-01 + Gandi DNS) and wildcard renewal used to keep the website/API certs alive. Needs secrets (`ACME_ACCOUNT_*`, `GANDI_API_TOKEN`). **Do not modify unless explicitly asked.** |
 | `.github/workflows/` | Scheduled certificate renewal. |
-| branch `gh-pages` | The https://backloop.dev website: cert files, `pack.json`, `llms.txt`, `robots.txt`. Jekyll-rendered README. |
+| branch `gh-pages` | The https://backloop.dev website: cert material, `pack.json`, `llms.txt`, `robots.txt`. Jekyll-rendered README. No private keys here. |
 | branch `renew-gh-pages` | Publishing target used by the renewal job. |
 
 There is no root `package.json`: `nodejs/`, `vitejs/` and `renew/` are independent npm projects.
@@ -30,7 +31,7 @@ There is no root `package.json`: `nodejs/`, `vitejs/` and `renew/` are independe
 ```bash
 cd nodejs
 npm install
-npm test          # Node.js built-in test runner (Node 18+ required)
+npm test          # Node.js built-in test runner (Node 18+ required), fully offline
 npm run lint      # eslint with neostandard
 ```
 
@@ -38,10 +39,10 @@ npm run lint      # eslint with neostandard
 
 ## Gotchas
 
-- `npm install` in `nodejs/` triggers `postinstall: node bin/update.js`, which **needs network access** to fetch `https://backloop.dev/pack.json`. In a sandboxed/offline environment, install with `npm install --ignore-scripts` and pre-seed certificates by pointing `BACKLOOP_DEV_CERTS_DIR` to a directory containing a valid `pack.json`.
-- `src/check.js` exits the process if the certs directory does not exist. The default is `nodejs/certs/` (kept by `.gitkeep`).
-- The private key is published split in two files (`backloop.dev-key.part1.pem` + `part2`); concatenate them to get the usable key. `pack.json` carries them as `key1` + `key2`.
-- The published cert is intentionally public (it only secures loopback traffic); do not "fix" this by treating it as a leaked secret.
+- `npm install` in `nodejs/` triggers `postinstall: node bin/update.js`, which is **best-effort**: it contacts `https://api.backloop.dev/cert` and exits 0 on failure, so installs work offline. For a fully offline install use `npm install --ignore-scripts` and pre-seed `BACKLOOP_DEV_CERTS_DIR` with a valid key + cert + `pack.json`.
+- `src/check.js` creates the certs directory if missing (default `nodejs/certs/`, kept by `.gitkeep`).
+- The local `certs/` dir contains a **private** `backloop.dev-key.pem` (mode 0600) — it must never be committed, uploaded, or published. `pack.json` is metadata only (hostnames, expiry) and contains no secrets.
+- Anyone can obtain a certificate for any subdomain (zero-registration service by design). The only protection against a poisoned DNS redirecting you to a malicious server that holds a cert for your subdomain is pinning the name locally (e.g. `/etc/hosts`). Do not "fix" this with registration — it would kill the zero-setup promise.
 
 ## Conventions
 

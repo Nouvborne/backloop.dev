@@ -4,11 +4,30 @@
  */
 const check = require('./check');
 
-function httpsOptions () {
-  const actual = check.loadFromLocalDirectory('=> run `./bin/update` to `backloop.dev-update` to update');
+/**
+ * Build the https options object from a loaded certificate.
+ */
+function toOptions (actual) {
+  return {
+    key: actual.key,
+    cert: actual.cert,
+    ca: actual.ca,
+    hostname: actual.hostnames[0],
+    hostnames: actual.hostnames
+  };
+}
+
+/**
+ * Synchronously return https options. If the certificate is missing or
+ * expired, triggers an update and exits the process (works on next start).
+ * Avoid in long-running tooling.
+ * @param {object} [opts] - same options as httpsOptionsPromise
+ */
+function httpsOptions (opts) {
+  const actual = check.loadLocal();
   if (actual == null || actual.expirationDays < 0) {
     // lazyly try to update
-    console.log('** Lazyly trying to update the certificate on my own ...');
+    console.log('** Lazily trying to update the certificate on my own ...');
     httpsOptionsAsync(function (err, res) {
       if (err) {
         console.log('** Failed with error', err);
@@ -16,14 +35,10 @@ function httpsOptions () {
         console.log('** Did it!! Killing your service... Just restart your service');
       }
       process.exit(1);
-    });
+    }, opts);
     return { key: '', cert: '', ca: '' };
   }
-  return {
-    key: actual.key1 + actual.key2,
-    cert: actual.cert,
-    ca: actual.ca
-  };
+  return toOptions(actual);
 }
 
 /**
@@ -34,22 +49,21 @@ function httpsOptions () {
 
 /**
  * @param {requestCallback} done
+ * @param {object} [opts] - same options as httpsOptionsPromise
  */
-function httpsOptionsAsync (done) {
-  httpsOptionsPromise().then((res) => { done(null, res); }, done);
+function httpsOptionsAsync (done, opts) {
+  httpsOptionsPromise(opts).then((res) => { done(null, res); }, done);
 }
 
 /**
+ * @param {object} [opts]
+ * @param {string[]} [opts.hostnames] - subdomains of backloop.dev the certificate must cover
  * @returns Promise<httpsOptions>
  */
-async function httpsOptionsPromise () {
-  const actual = await check.updateAndLoad();
-  if (actual == null) throw (new Error('Failed loading backloop.dev certificate'));
-  return {
-    key: actual.key1 + actual.key2,
-    cert: actual.cert,
-    ca: actual.ca
-  };
+async function httpsOptionsPromise (opts) {
+  const actual = await check.updateAndLoad(opts || {});
+  if (actual == null) throw new Error('Failed loading backloop.dev certificate');
+  return toOptions(actual);
 }
 
 module.exports = {

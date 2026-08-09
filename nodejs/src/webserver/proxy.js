@@ -115,7 +115,7 @@ function runCLI () {
     if (err) { console.error(err); return; }
     https.createServer(httpsOptions, createProxyHandler(targetArg)).listen(port);
     console.log(`Proxy started on port ${port} serving ${targetDisplay}\n` +
-      `You can open https://whatever.backloop.dev:${port}/`);
+      `You can open https://${httpsOptions.hostname}.backloop.dev:${port}/`);
   });
 }
 
